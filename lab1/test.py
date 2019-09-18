@@ -2,22 +2,6 @@ import tensorflow as tf
 import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-'''
-with tf.Session() as sess:
-    with tf.device("/GPU:0"):
-        matrix1 = tf.constant([[4., 3.]])
-        matrix2 = tf.constant([[2.], [2.]])
-        product = tf.matmul(matrix1, matrix2)
-A = tf.Variable(tf.constant(0.0), dtype=tf.float32)
-
-with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
-    a = tf.add(3, 4)
-    print(a)
-    sess.run(a)
-    print(a.get_shape())
-
-'''
 
 
 def getExp(x):
