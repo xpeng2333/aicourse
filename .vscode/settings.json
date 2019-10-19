@@ -1,3 +1,8 @@
 {
-    "python.pythonPath": "/home/xiaopeng/anaconda3/envs/aicourse/bin/python"
+    "python.pythonPath": "/home/xiaopeng/anaconda3/envs/aicourse/bin/python",
+    "editor.wordWrap": "on",
+    "python.linting.pycodestyleEnabled": true,
+    "python.linting.pycodestyleArgs": [
+        "--ignore=E501"
+    ]
 }

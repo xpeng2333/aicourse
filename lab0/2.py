@@ -2,15 +2,13 @@ import tensorflow as tf
 import numpy as np
 import os
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
 x_data = np.float32(np.random.rand(2, 100))
-y_data = np.dot([0.100, 0.200], x_data)+0.300
+y_data = np.dot([0.100, 0.200], x_data) + 0.300
 
 b = tf.Variable(tf.zeros([1]))
 w = tf.Variable(tf.random_uniform([1, 2], -1.0, 1.0))
-y = tf.matmul(w, x_data)+b
-loss = tf.reduce_mean(tf.square(y-y_data))
+y = tf.matmul(w, x_data) + b
+loss = tf.reduce_mean(tf.square(y - y_data))
 optimizer = tf.train.GradientDescentOptimizer(0.5)
 train = optimizer.minimize(loss)
 

@@ -13,6 +13,7 @@ def plot_learning_curves(model, X, y):
     X_train, X_val, y_train, y_val = train_test_split(
         X, y, test_size=0.2, random_state=10)
     train_errors, val_errors = [], []
+
     for m in range(1, len(X_train)):
         model.fit(X_train[:m], y_train[:m])
         y_train_predict = model.predict(X_train[:m])
@@ -29,23 +30,40 @@ def plot_learning_curves(model, X, y):
 
 # np.random.seed(20)
 x = np.random.rand(200, 1)
-y = 5+1.2*x-3.4*x**2+5.6*x**3 + np.random.normal(scale=0.1, size=(200, 1))
 
+X_scaler = StandardScaler()
+#y_scaler = StandardScaler()
+
+
+#y_train = y_scaler.fit_transform(y_train.reshape(-1, 1))
+# X_val = X_scaler.transform(X_val)
+# y_val = y_scaler.transform(y_val.reshape(-1, 1))
+
+y = 5 + 1.2 * x - 3.4 * x ** 2 + 5.6 * x ** 3 + \
+    np.random.normal(scale=0.1, size=(200, 1))
 X_train, X_test, y_train, y_test = train_test_split(
     x, y, test_size=0.5, random_state=10)
 
-
 poly_features = PolynomialFeatures(degree=3, include_bias=False)
 x_poly = poly_features.fit_transform(X_train)
+x_poly = X_scaler.fit_transform(x_poly)
+print(x_poly[0], x_poly[0][0])
+y_train = []
+for i in range(100):
+    y_train.append(5 + 1.2 * x[i][0] - 3.4 * x[i][0] ** 2 + 5.6 * x[i][0] ** 3)
 
-sgd_reg = SGDRegressor(eta0=0.0001, learning_rate='constant', max_iter=50000, tol=-
+y_train = np.array(y_train)
+#y_train += np.random.normal(scale=0.1, size=(100, 1))
+print(y_train[0])
+
+sgd_reg = SGDRegressor(eta0=0.001, learning_rate='constant', max_iter=5000, tol=-
                        np.infty, penalty='none', random_state=10, fit_intercept=True)
 plot_learning_curves(sgd_reg, x_poly, y_train.ravel())
-#print(sgd_reg.intercept_, sgd_reg.coef_)
+# print(sgd_reg.intercept_, sgd_reg.coef_)
 plt.axis([0, 80, 0, 2])
 plt.show()
 
-
+'''
 sgd_reg_lin = SGDRegressor(tol=-
                            np.infty, penalty='none', random_state=10, fit_intercept=True)
 plot_learning_curves(sgd_reg_lin, X_train, y_train.ravel())
@@ -66,3 +84,4 @@ sgd_reg10_l2 = SGDRegressor(eta0=0.01, learning_rate='constant', max_iter=500, t
 plot_learning_curves(sgd_reg10_l2, x_poly10, y_train.ravel())
 plt.axis([0, 80, 0, 2])
 plt.show()
+'''
