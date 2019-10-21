@@ -4,5 +4,6 @@
     "python.linting.pycodestyleEnabled": true,
     "python.linting.pycodestyleArgs": [
         "--ignore=E501"
-    ]
+    ],
+    "python.formatting.provider": "yapf"
 }
