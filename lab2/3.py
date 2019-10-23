@@ -15,7 +15,8 @@ UP_CASE = [
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
     'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
 ]
-CAPTCHA_LIST = NUMBER + LOW_CASE + UP_CASE
+# CAPTCHA_LIST = NUMBER + LOW_CASE + UP_CASE
+CAPTCHA_LIST = NUMBER
 CAPTCHA_LEN = 4
 CAPTCHA_HEIGHT = 60
 CAPTCHA_WIDTH = 160

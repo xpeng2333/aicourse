@@ -15,7 +15,8 @@ UP_CASE = [
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
     'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
 ]
-CAPTCHA_LIST = NUMBER + LOW_CASE + UP_CASE
+# CAPTCHA_LIST = NUMBER + LOW_CASE + UP_CASE
+CAPTCHA_LIST = NUMBER
 CAPTCHA_LEN = 4
 CAPTCHA_HEIGHT = 60
 CAPTCHA_WIDTH = 160
@@ -348,7 +349,9 @@ def captcha2text(image_list, height=CAPTCHA_HEIGHT, width=CAPTCHA_WIDTH):
     y_conv = cnn_graph(x, keep_prob, (height, width))
     saver = tf.train.Saver()
     with tf.Session() as sess:
-        saver.restore(sess, tf.train.latest_checkpoint('.'))
+        saver.restore(
+            sess,
+            tf.train.latest_checkpoint('./tmp/' + str(len(CAPTCHA_LIST))))
         predict = tf.argmax(
             tf.reshape(y_conv,
                        [-1, CAPTCHA_LEN, len(CAPTCHA_LIST)]), 2)
@@ -362,13 +365,14 @@ def captcha2text(image_list, height=CAPTCHA_HEIGHT, width=CAPTCHA_WIDTH):
         return text_list
 
 
+'''
 if __name__ == '__main__':
     train()
 '''
+
 if __name__ == '__main__':
-    text, image = gen_captcha_text_and_image()
+    text, image = gen_captcha_text_and_image(save=True)
     image = convert2gray(image)
     image = image.flatten() / 255
     pre_text = captcha2text([image])
     print('Label:', text, ' Predict:', pre_text)
-'''
