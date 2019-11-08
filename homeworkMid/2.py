@@ -181,7 +181,7 @@ pyl.xticks(np.arange(0.5, 11.5), [
 pyl.yticks(np.arange(0.5, 11.5), [
     'KNN', 'DT', 'RF', 'SVC', 'AdaB', 'GBC', 'GNB', 'LDA', 'QDA', 'LR', 'xgb'
 ])
-
+pyl.savefig("test.jpg")
 pyl.show
 
 index = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
