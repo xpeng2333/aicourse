@@ -30,14 +30,14 @@ obj = gen_id_card()
 num_classes = obj.len + 1 + 1  # 10位数字 + blank + ctc blank
 
 # 初始化学习速率
-INITIAL_LEARNING_RATE = 1e-3
+INITIAL_LEARNING_RATE = 1e-4
 DECAY_STEPS = 5000
 REPORT_STEPS = 100
 LEARNING_RATE_DECAY_FACTOR = 0.9  # The learning rate decay factor
 MOMENTUM = 0.9
 
-# DIGITS = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-DIGITS = '0123456789'
+DIGITS = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+# DIGITS = '0123456789'
 BATCHES = 10
 BATCH_SIZE = 64
 TRAIN_SIZE = BATCHES * BATCH_SIZE
@@ -114,12 +114,13 @@ def sparse_tuple_from(sequences, dtype=np.int32):
     for n, seq in enumerate(sequences):
         indices.extend(zip([n] * len(seq), range(len(seq))))
         values.extend(seq)
-
     indices = np.asarray(indices, dtype=np.int64)
-    values = np.asarray(values, dtype=dtype)
+    valuestmp = []
+    for c in values:
+        valuestmp.append(DIGITS.find(c))
+    values = np.asarray(valuestmp, dtype=dtype)  # error
     shape = np.asarray(
         [len(sequences), np.asarray(indices).max(0)[1] + 1], dtype=np.int64)
-
     return indices, values, shape
 
 
@@ -167,6 +168,7 @@ def get_a_image():
     inputs[0, :] = np.transpose(
         image.reshape((OUTPUT_SHAPE[0], OUTPUT_SHAPE[1])))
     codes.append(list(text))
+    print(codes)
     targets = [np.asarray(i) for i in codes]
     sparse_targets = sparse_tuple_from(targets)
     seq_len = np.ones(inputs.shape[0]) * OUTPUT_SHAPE[1]
@@ -301,6 +303,7 @@ def crack_image():
         dd, log_probs, accuracy = session.run([decoded[0], log_prob, acc],
                                               test_feed)
         report_accuracy(dd, test_targets)
+        cv2.imwrite('image.bmp', image)
         cv2.imshow('image', image)
         cv2.waitKey(0)
 
@@ -345,7 +348,6 @@ def train():
 
     def do_batch():
         train_inputs, train_targets, train_seq_len = get_next_batch(BATCH_SIZE)
-
         feed = {
             inputs: train_inputs,
             targets: train_targets,
@@ -365,7 +367,7 @@ def train():
                                        "./ocr.model",
                                        global_step=steps)
                 print(save_path)
-                raise FError("Train succcess")
+                # raise FError("Train succcess")
         return b_cost, steps
 
     with tf.Session() as session:

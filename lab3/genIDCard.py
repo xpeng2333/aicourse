@@ -108,8 +108,8 @@ class gen_id_card(object):
             'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
             'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
         ]
-        self.char_set = self.number
-        # self.char_set = self.letter + self.number
+        # self.char_set = self.number
+        self.char_set = self.number + self.letter
         self.len = len(self.char_set)
 
         self.max_size = 18
@@ -118,7 +118,7 @@ class gen_id_card(object):
     def random_text(self):
         text = ''
         vecs = np.zeros((self.max_size * self.len))
-        size = random.randint(1, self.max_size)
+        size = random.randint(2, self.max_size)
         # size = self.max_size
         for i in range(size):
             c = random.choice(self.char_set)
