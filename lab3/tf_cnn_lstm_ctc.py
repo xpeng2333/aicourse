@@ -82,7 +82,7 @@ def report_accuracy(decoded_list, test_targets):
     original_list = decode_sparse_tensor(test_targets)
     detected_list = decode_sparse_tensor(decoded_list)
     original_list = original_list[1:]
-    detected_list = decoded_list[1:]
+    detected_list = detected_list[1:]
     true_numer = 0
     if len(original_list) != len(detected_list):
         print("len(original_list)", len(original_list), "len(detected_list)",
