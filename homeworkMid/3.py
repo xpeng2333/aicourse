@@ -4,10 +4,30 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedShuffleSplit
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import Imputer
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import Imputer, StandardScaler, LabelBinarizer, PolynomialFeatures
+from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.pipeline import FeatureUnion
+from sklearn.pipeline import FeatureUnion, Pipeline
+from sklearn_features.transformers import DataFrameSelector
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.base import TransformerMixin
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import GridSearchCV
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+from sklearn.ensemble import VotingRegressor
+
+
+class MyLabelBinarizer(TransformerMixin):
+    def __init__(self, *args, **kwargs):
+        self.encoder = LabelBinarizer(*args, **kwargs)
+
+    def fit(self, x, y=0):
+        self.encoder.fit(x)
+        return self
+
+    def transform(self, x, y=0):
+        return self.encoder.transform(x)
 
 
 def load_housing_data(housing_path="./homeworkMid"):
@@ -95,14 +115,23 @@ housing[
 
 corr_matrix = housing.corr()
 print(corr_matrix["median_house_value"].sort_values(ascending=False))
+
+housing = strat_train_set.drop("median_house_value", axis=1)
+housing_labels = strat_train_set["median_house_value"].copy()
+
 imputer = Imputer(strategy="median")
 housing_num = housing.drop("ocean_proximity", axis=1)
 imputer.fit(housing_num)
 X = imputer.transform(housing_num)
 
 housing_cat = housing[['ocean_proximity']]
+# ordinal_encoder = OrdinalEncoder()
+# housing_cat_encoded = ordinal_encoder.fit_transform(housing_cat)
 cat_encoder = OneHotEncoder(sparse=False)
 housing_cat_1hot = cat_encoder.fit_transform(housing_cat)
+print(housing_cat_1hot)
+# housing_cat = housing[['ocean_proximity']]
+# print(housing[['ocean_proximity']])
 
 rooms_ix, bedrooms_ix, population_ix, household_ix = 3, 4, 5, 6
 
@@ -140,7 +169,7 @@ num_pipeline = Pipeline([
 
 cat_pipeline = Pipeline([
     ('selector', DataFrameSelector(cat_attribs)),
-    ('label_binarizer', LabelBinarizer()),
+    ('label_binarizer', MyLabelBinarizer()),
 ])
 
 full_pipeline = FeatureUnion(transformer_list=[
@@ -149,4 +178,60 @@ full_pipeline = FeatureUnion(transformer_list=[
 ])
 
 housing_prepared = full_pipeline.fit_transform(housing)
-housing_prepared.shape
+
+
+def display_scores(scores):
+    print("Scores:", scores)
+    print("Mean:", scores.mean())
+    print("Standard deviation:", scores.std())
+
+
+# 线性回归
+lin_reg = LinearRegression()
+lin_reg.fit(housing_prepared, housing_labels)
+housing_predictions = lin_reg.predict(housing_prepared)
+lin_mse = mean_squared_error(housing_labels, housing_predictions)
+lin_rmse = np.sqrt(lin_mse)
+print(lin_rmse)
+
+# 随机森林
+forest_reg = RandomForestRegressor(n_estimators=10, random_state=42)
+forest_reg.fit(housing_prepared, housing_labels)
+
+forest_scores = cross_val_score(forest_reg,
+                                housing_prepared,
+                                housing_labels,
+                                scoring="neg_mean_squared_error",
+                                cv=5)
+forest_rmse_scores = np.sqrt(-forest_scores)
+display_scores(forest_rmse_scores)
+
+param_grid = [
+    {
+        'n_estimators': [3, 10, 30],
+        'max_features': [2, 4, 6, 8]
+    },
+    {
+        'bootstrap': [False],
+        'n_estimators': [3, 10],
+        'max_features': [2, 3, 4]
+    },
+]
+forest_reg = RandomForestRegressor()
+grid_search = GridSearchCV(forest_reg,
+                           param_grid,
+                           cv=5,
+                           scoring='neg_mean_squared_error')
+grid_search.fit(housing_prepared, housing_labels)
+print(grid_search.best_params_)
+forest_reg = RandomForestRegressor(n_estimators=30, random_state=42)
+forest_reg.fit(housing_prepared, housing_labels)
+ensemble_model = VotingRegressor(
+    estimators=[('lin_reg', lin_reg), ('forest_reg', forest_reg)])
+result = cross_val_score(ensemble_model,
+                         housing_prepared,
+                         housing_labels,
+                         scoring="neg_mean_squared_error",
+                         cv=5)
+rmse_scores = np.sqrt(-result)
+display_scores(rmse_scores)
