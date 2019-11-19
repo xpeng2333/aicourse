@@ -30,7 +30,7 @@ obj = gen_id_card()
 num_classes = obj.len + 1 + 1  # 10位数字 + blank + ctc blank
 
 # 初始化学习速率
-INITIAL_LEARNING_RATE = 1e-4
+INITIAL_LEARNING_RATE = 1e-3
 DECAY_STEPS = 5000
 REPORT_STEPS = 100
 LEARNING_RATE_DECAY_FACTOR = 0.9  # The learning rate decay factor
@@ -81,6 +81,8 @@ def decode_a_seq(indexes, spars_tensor):
 def report_accuracy(decoded_list, test_targets):
     original_list = decode_sparse_tensor(test_targets)
     detected_list = decode_sparse_tensor(decoded_list)
+    original_list = original_list[1:]
+    detected_list = detected_list[1:]
     true_numer = 0
     if len(original_list) != len(detected_list):
         print("len(original_list)", len(original_list), "len(detected_list)",
