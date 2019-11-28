@@ -61,7 +61,7 @@ class Ui_MainWindow(QtWidgets.QWidget):
             flag = self.cap.open(self.CAM_NUM)
             if flag is False:  # flag表示open()成不成功
                 msg = QtWidgets.QMessageBox.warning(
-                    self, 'warning', "请检查相机于电脑是否连接正确", buttons=QtWidgets.QMessageBox.Ok)
+                    self, 'warning', "请检查相机与电脑是否连接正确", buttons=QtWidgets.QMessageBox.Ok)
             else:
                 self.timer_camera.start(30)  # 定时器开始计时30ms，结果是每过30ms从摄像头中取一帧显示
                 self.button_open_camera.setText('关闭相机')
@@ -76,6 +76,7 @@ class Ui_MainWindow(QtWidgets.QWidget):
 
         show = cv2.resize(self.image, (640, 480))  # 把读到的帧的大小重新设置为 640x480
         show = cv2.cvtColor(show, cv2.COLOR_BGR2RGB)  # 视频色彩转换回RGB，这样才是现实的颜色
+        show = cv2.flip(show, 1)
         showImage = QtGui.QImage(
             show.data, show.shape[1], show.shape[0], QtGui.QImage.Format_RGB888)  # 把读取到的视频数据变成QImage形式
         self.label_show_camera.setPixmap(
