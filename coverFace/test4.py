@@ -1,6 +1,8 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 import sys
 import cv2
+from PIL import Image
+import numpy as np
 
 
 class Ui_MainWindow(QtWidgets.QWidget):
@@ -10,10 +12,11 @@ class Ui_MainWindow(QtWidgets.QWidget):
         self.timer_camera = QtCore.QTimer()  # 定义定时器，用于控制显示视频的帧率
         self.cap = cv2.VideoCapture()  # 视频流
         self.CAM_NUM = 0  # 为0时表示视频流来自笔记本内置摄像头
-
         self.set_ui()  # 初始化程序界面
         self.slot_init()  # 初始化槽函数
-
+        self.icons = []
+        self.gen_iconlist()
+        self.coverflag = False
     '''程序界面布局'''
 
     def set_ui(self):
@@ -22,10 +25,13 @@ class Ui_MainWindow(QtWidgets.QWidget):
         self.__layout_data_show = QtWidgets.QVBoxLayout()  # 数据(视频)显示布局
         self.button_open_camera = QtWidgets.QPushButton('打开相机')  # 建立用于打开摄像头的按键
         self.button_close = QtWidgets.QPushButton('退出')  # 建立用于退出程序的按键
+        self.button_cover = QtWidgets.QPushButton('遮盖')
         self.button_open_camera.setMinimumHeight(50)  # 设置按键大小
         self.button_close.setMinimumHeight(50)
-
+        self.button_cover.setMinimumHeight(50)
+        self.button_cover.move(10, 50)
         self.button_close.move(10, 100)  # 移动按键
+
         '''信息显示'''
         self.label_show_camera = QtWidgets.QLabel()  # 定义显示视频的Label
         self.label_show_camera.setFixedSize(
@@ -33,8 +39,10 @@ class Ui_MainWindow(QtWidgets.QWidget):
         '''把按键加入到按键布局中'''
         self.__layout_fun_button.addWidget(
             self.button_open_camera)  # 把打开摄像头的按键放到按键布局中
+        self.__layout_fun_button.addWidget(self.button_cover)
         self.__layout_fun_button.addWidget(
             self.button_close)  # 把退出程序的按键放到按键布局中
+
         '''把某些控件加入到总布局中'''
         self.__layout_main.addLayout(self.__layout_fun_button)  # 把按键布局加入到总布局中
         self.__layout_main.addWidget(
@@ -52,8 +60,17 @@ class Ui_MainWindow(QtWidgets.QWidget):
             self.show_camera)  # 若定时器结束，则调用show_camera()
         # 若该按键被点击，则调用close()，注意这个close是父类QtWidgets.QWidget自带的，会关闭程序
         self.button_close.clicked.connect(self.close)
+        self.button_cover.clicked.connect(self.startCover)
 
     '''槽函数之一'''
+
+    def startCover(self):
+        if self.coverflag:
+            self.coverflag = False
+            self.button_cover.setText('遮盖')
+        else:
+            self.coverflag = True
+            self.button_cover.setText('原图')
 
     def button_open_camera_clicked(self):
         if self.timer_camera.isActive() is False:  # 若定时器未启动
@@ -71,12 +88,27 @@ class Ui_MainWindow(QtWidgets.QWidget):
             self.label_show_camera.clear()  # 清空视频显示区域
             self.button_open_camera.setText('打开相机')
 
+    def gen_iconlist(self):
+        for i in range(10):
+            icon = Image.open("./icons/" + str(i) + ".png")
+            self.icons.append(icon)
+
+    def addIcon(self, img0, posList):
+        img1 = Image.fromarray(img0)
+        for i, pos in enumerate(posList):
+            icon = self.icons[i % 10]
+            icon = icon.resize((pos[2], pos[3]), Image.ANTIALIAS)
+            layer = Image.new('RGBA', img1.size, (0, 0, 0, 0))
+            layer.paste(icon, (pos[0], pos[1]))
+            return np.asarray(Image.composite(layer, img1, layer))
+
     def show_camera(self):
         flag, self.image = self.cap.read()  # 从视频流中读取
-
         show = cv2.resize(self.image, (640, 480))  # 把读到的帧的大小重新设置为 640x480
         show = cv2.cvtColor(show, cv2.COLOR_BGR2RGB)  # 视频色彩转换回RGB，这样才是现实的颜色
         show = cv2.flip(show, 1)
+        if self.coverflag:
+            show = self.addIcon(show, [[20, 20, 400, 400]])
         showImage = QtGui.QImage(
             show.data, show.shape[1], show.shape[0], QtGui.QImage.Format_RGB888)  # 把读取到的视频数据变成QImage形式
         self.label_show_camera.setPixmap(
