@@ -4,7 +4,7 @@ import numpy as np
 num_keep_radio = 0.7
 
 
-def P_Net(inputs, label=None, bbox_target=None, landmark_target=None, training=False):
+def P_Net(inputs, label=None, bbox_target=None, landmark_target=None):
     with tf.variable_scope('PNet'):
         with slim.arg_scope([slim.conv2d], activation_fn=prelu,
                             weights_initializer=slim.xavier_initializer(),
@@ -28,7 +28,7 @@ def P_Net(inputs, label=None, bbox_target=None, landmark_target=None, training=F
             return cls_pro_test, bbox_pred_test, landmark_pred_test
 
 
-def R_Net(inputs, label=None, bbox_target=None, landmark_target=None, training=False):
+def R_Net(inputs, label=None, bbox_target=None, landmark_target=None):
     with tf.variable_scope('RNet'):
         with slim.arg_scope([slim.conv2d],
                             activation_fn=prelu,
@@ -56,7 +56,7 @@ def R_Net(inputs, label=None, bbox_target=None, landmark_target=None, training=F
             return cls_prob, bbox_pred, landmark_pred
 
 
-def O_Net(inputs, label=None, bbox_target=None, landmark_target=None, training=False):
+def O_Net(inputs, label=None, bbox_target=None, landmark_target=None):
     with tf.variable_scope('ONet'):
         with slim.arg_scope([slim.conv2d],
                             activation_fn=prelu,

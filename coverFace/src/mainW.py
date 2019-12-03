@@ -235,12 +235,6 @@ class Ui_MainWindow(QtWidgets.QWidget):
             print('未检测到人脸')
             return None, None, None
 
-    def load_model(self, model_dir, input_map=None):
-        ckpt = tf.train.get_checkpoint_state(model_dir)
-        saver = tf.train.import_meta_graph(
-            ckpt.model_checkpoint_path + '.meta')
-        saver.restore(tf.get_default_session(), ckpt.model_checkpoint_path)
-
     def sess_init(self):
         self.sess = tf.Session()
         ckpt = tf.train.get_checkpoint_state('../model/')
@@ -269,7 +263,7 @@ class Ui_MainWindow(QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self, "警告", "请先打开相机")
             return
         else:
-            time.sleep(1)
+            time.sleep(0.5)
             flag, img = self.cap.read()
         if flag:
             self.timer_camera.stop()
