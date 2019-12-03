@@ -18,7 +18,7 @@ import copy
 class Ui_MainWindow(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)  # 父类的构造函数
-
+        self.setFixedSize(self.width(), self.height())
         self.timer_camera = QtCore.QTimer()  # 定义定时器，用于控制显示视频的帧率
         self.cap = cv2.VideoCapture()  # 视频流
         self.CAM_NUM = 0  # 为0时表示视频流来自笔记本内置摄像头
@@ -37,6 +37,8 @@ class Ui_MainWindow(QtWidgets.QWidget):
         self.sess = self.sess_init()
         self.THRED = 0.002
         self.count = 0
+        self.iconPos = []
+        self.iconclass = []
     '''程序界面布局'''
 
     def set_ui(self):
@@ -118,26 +120,33 @@ class Ui_MainWindow(QtWidgets.QWidget):
             icon = Image.open("../icons/" + str(i) + ".png")
             self.icons.append(icon)
 
-    def addIcon(self, img0, posList):
+    def addIcon(self, img0, classList, posList):
+        if not len(classList):
+            return img0
         img1 = Image.fromarray(img0)
         for i, pos in enumerate(posList):
-            icon = self.icons[i % 10]
-            icon = icon.resize((pos[2], pos[3]), Image.ANTIALIAS)
+            icon = self.icons[classList[i] % 10]
+            icon = icon.resize(
+                (pos[2] - pos[0], pos[3] - pos[1]), Image.ANTIALIAS)
             layer = Image.new('RGBA', img1.size, (0, 0, 0, 0))
             layer.paste(icon, (pos[0], pos[1]))
-            return np.asarray(Image.composite(layer, img1, layer))
+            img1 = Image.composite(layer, img1, layer)
+        return np.asarray(img1)
 
     def show_camera(self):
         self.count += 1
         self.count %= 100
         flag, self.image = self.cap.read()  # 从视频流中读取
+        if not flag:
+            return
         show = cv2.resize(self.image, (640, 480))  # 把读到的帧的大小重新设置为 640x480
         show = cv2.flip(show, 1)
         if len(self.embedingList) and not self.count:
             self.genIDPos(copy.deepcopy(show))
         show = cv2.cvtColor(show, cv2.COLOR_BGR2RGB)  # 视频色彩转换回RGB，这样才是现实的颜色
         if self.coverflag:
-            show = self.addIcon(show, [[20, 20, 400, 400]])
+            # print(iconclass)
+            show = self.addIcon(show, self.iconclass, self.iconPos)
         showImage = QtGui.QImage(
             show.data, show.shape[1], show.shape[0], QtGui.QImage.Format_RGB888)  # 把读取到的视频数据变成QImage形式
         self.label_show_camera.setPixmap(
@@ -177,11 +186,13 @@ class Ui_MainWindow(QtWidgets.QWidget):
         # img_paths = [os.path.join(path, p) for p in img_paths]
         scaled_arr = []
         class_names_arr = []
+        start1 = time.clock()
         try:
             boxes_c, _ = self.mtcnn_detector.detect(img)
         except:
             print('识别不出图像\n')
             return None, None, None
+        start2 = time.clock()
         # 人脸框数量
         num_box = boxes_c.shape[0]
         if num_box > 0:
@@ -218,6 +229,8 @@ class Ui_MainWindow(QtWidgets.QWidget):
             print('图像不能对齐')
         scaled_arr = np.asarray(scaled_arr)
         class_names_arr = np.asarray(class_names_arr)
+        start3 = time.clock()
+        print(str(start2 - start1), (start3 - start2))
         return scaled_arr, class_names_arr
 
     def align_face(self, img):
@@ -225,10 +238,11 @@ class Ui_MainWindow(QtWidgets.QWidget):
             boxes_c, _ = self.mtcnn_detector.detect(img)
         except:
             print('找不到脸')
-            return None, None
+            return None, None, None
         # 人脸框数量
         num_box = boxes_c.shape[0]
         scaled_arr = []
+        recList = []
         if num_box > 0:
             det = boxes_c[:, :4]
             det_arr = []
@@ -240,6 +254,7 @@ class Ui_MainWindow(QtWidgets.QWidget):
                 det = np.squeeze(det)
                 bb = [int(max(det[0], 0)), int(max(det[1], 0)), int(
                     min(det[2], img_size[1])), int(min(det[3], img_size[0]))]
+                recList.append(bb)
                 # cv2.rectangle(img, (bb[0], bb[1]),
                 #              (bb[2], bb[3]), (0, 255, 0), 2)
                 cropped = img[bb[1]:bb[3], bb[0]:bb[2], :]
@@ -249,10 +264,10 @@ class Ui_MainWindow(QtWidgets.QWidget):
                     scaled, cv2.COLOR_BGR2RGB) - 127.5 / 128.0
                 scaled_arr.append(scaled)
             scaled_arr = np.array(scaled_arr)
-            return img, scaled_arr
+            return img, scaled_arr, recList
         else:
             print('找不到脸 ')
-            return None, None
+            return None, None, None
 
     def load_model(self, model_dir, input_map=None):
         '''重载模型'''
@@ -283,7 +298,7 @@ class Ui_MainWindow(QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self, "标题", "请先打开相机")
             return
         else:
-            time.sleep(2)
+            time.sleep(1)
             flag, img = self.cap.read()
         if flag:
             self.timer_camera.stop()
@@ -292,47 +307,26 @@ class Ui_MainWindow(QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self, "标题", "选取失败")
             return
         scaled_arr, class_arr = self.align_face_init(img)
-        with tf.Graph().as_default():
-            '''
-            with tf.Session() as sess:
-                self.load_model('../model/')
-                images_placeholder = tf.get_default_graph().get_tensor_by_name(
-                    "input:0")
-                embeddings = tf.get_default_graph().get_tensor_by_name(
-                    "embeddings:0")
-                phase_train_placeholder = tf.get_default_graph(
-                ).get_tensor_by_name("phase_train:0")
-                keep_probability_placeholder = tf.get_default_graph(
-                ).get_tensor_by_name('keep_probability:0')
-
-                # 前向传播计算embeddings
-                feed_dict = {
-                    images_placeholder: scaled_arr,
-                    phase_train_placeholder: False,
-                    keep_probability_placeholder: 1.0
-                }'''
-            feed_dict = {
-                self.images_placeholder: scaled_arr,
-                self.phase_train_placeholder: False,
-                self.keep_probability_placeholder: 1.0
-            }
-            embs = self.sess.run(self.embeddings, feed_dict=feed_dict)
+        feed_dict = {
+            self.images_placeholder: scaled_arr,
+            self.phase_train_placeholder: False,
+            self.keep_probability_placeholder: 1.0
+        }
+        embs = self.sess.run(self.embeddings, feed_dict=feed_dict)
         self.embedingList.append(embs)
         self.button_select.setText('已选 ' + str(len(self.embedingList)) + ' 人')
         self.timer_camera.start(30)
 
     def genIDPos(self, img):
         with tf.Graph().as_default():
-            try:
-                img, scaled_arr = self.align_face(img)
-            except:
-                return
+            img, scaled_arr, recList = self.align_face(img)
             if scaled_arr is not None:
                 feed_dict = {self.images_placeholder: scaled_arr,
                              self.phase_train_placeholder: False, self.keep_probability_placeholder: 1.0}
                 embs = self.sess.run(self.embeddings, feed_dict=feed_dict)
                 face_num = embs.shape[0]
-                face_class = [-1] * face_num
+                face_class = []
+                icons_pos_scale = []
                 for i in range(face_num):
                     diff = []
                     for man in self.embedingList:
@@ -340,12 +334,16 @@ class Ui_MainWindow(QtWidgets.QWidget):
                     min_diff = min(diff)
                     # print(min_diff)
                     if min_diff < 0.002:
-                        face_class[i] = np.argmin(diff)
+                        face_class.append(np.argmin(diff))
+                        icons_pos_scale.append(recList[i])
                     else:
                         break
+                print(face_class)
+                self.iconclass = face_class
+                self.iconPos = icons_pos_scale
             else:
-                return
-        # print(face_class)
+                self.iconclass = []
+                self.iconPos = []
 
 
 if __name__ == '__main__':
