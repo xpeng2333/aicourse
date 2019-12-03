@@ -273,6 +273,9 @@ class Ui_MainWindow(QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self, "警告", "选取失败")
             return
         scaled_arr, class_arr = self.align_face_init(img)
+        if scaled_arr is None:
+            self.timer_camera.start(10)
+            return
         feed_dict = {
             self.images_placeholder: scaled_arr,
             self.phase_train_placeholder: False,
