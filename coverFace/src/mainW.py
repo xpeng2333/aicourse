@@ -139,7 +139,7 @@ class Ui_MainWindow(QtWidgets.QWidget):
         thresh = config.thresh
         min_face_size = config.min_face
         stride = config.stride
-        test_mode = config.test_mode
+        test_mode = "ONet"
         detectors = [None, None, None]
         model_path = ['./model/PNet/',
                       './model/RNet/', './model/ONet']
@@ -166,7 +166,7 @@ class Ui_MainWindow(QtWidgets.QWidget):
             boxes_c, _ = self.mtcnn_detector.detect(img)
         except:
             print('未检测到人脸！\n')
-            return None, None, None
+            return None, None
         num_box = boxes_c.shape[0]
         if num_box > 0:
             det = boxes_c[:, :4]
@@ -198,6 +198,7 @@ class Ui_MainWindow(QtWidgets.QWidget):
 
         else:
             print('无法对齐人脸')
+            return None, None
         scaled_arr = np.asarray(scaled_arr)
         class_names_arr = np.asarray(class_names_arr)
         return scaled_arr, class_names_arr
@@ -283,31 +284,29 @@ class Ui_MainWindow(QtWidgets.QWidget):
         self.timer_camera.start(10)
 
     def genIDPos(self, img):
-        with tf.Graph().as_default():
-            img, scaled_arr, recList = self.align_face(img)
-            if scaled_arr is not None:
-                feed_dict = {self.images_placeholder: scaled_arr,
-                             self.phase_train_placeholder: False, self.keep_probability_placeholder: 1.0}
-                embs = self.sess.run(self.embeddings, feed_dict=feed_dict)
-                face_num = embs.shape[0]
-                face_class = []
-                icons_pos_scale = []
-                for i in range(face_num):
-                    diff = []
-                    for man in self.embedingList:
-                        diff.append(np.mean(np.square(embs[i] - man), axis=1))
-                    min_diff = min(diff)
-                    if min_diff < 0.002:
-                        face_class.append(np.argmin(diff))
-                        icons_pos_scale.append(recList[i])
-                    else:
-                        break
-                print(face_class)
-                self.iconclass = face_class
-                self.iconPos = icons_pos_scale
-            else:
-                self.iconclass = []
-                self.iconPos = []
+        img, scaled_arr, recList = self.align_face(img)
+        if scaled_arr is not None:
+            feed_dict = {self.images_placeholder: scaled_arr,
+                         self.phase_train_placeholder: False, self.keep_probability_placeholder: 1.0}
+            embs = self.sess.run(self.embeddings, feed_dict=feed_dict)
+            face_num = embs.shape[0]
+            face_class = []
+            icons_pos_scale = []
+            for i in range(face_num):
+                diff = []
+                for man in self.embedingList:
+                    diff.append(np.mean(np.square(embs[i] - man), axis=1))
+                min_diff = min(diff)
+                if min_diff < 0.002:
+                    face_class.append(np.argmin(diff))
+                    icons_pos_scale.append(recList[i])
+                else:
+                    break
+            self.iconclass = face_class
+            self.iconPos = icons_pos_scale
+        else:
+            self.iconclass = []
+            self.iconPos = []
 
 
 if __name__ == '__main__':
